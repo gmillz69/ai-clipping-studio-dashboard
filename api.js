@@ -422,6 +422,22 @@ const StudioAPI = (() => {
     return stream;
   }
 
+  /** [ai-clipping-studio] Fetch an output file with the tunnel and auth headers.
+   *  <video src> and plain links cannot send headers, so free ngrok tunnels may
+   *  answer them with a browser-warning page; fetching first avoids that. */
+  async function fetchOutputBlob(path) {
+    const base = getBackendUrl();
+    if (!base) throw StudioI18n.error('api.noBackend');
+    if (!String(path).startsWith('/api/outputs/')) throw StudioI18n.error('api.unexpectedPage');
+    const res = await fetch(`${base}${path}`, { headers: { ...TUNNEL_HEADERS, ...authHeaders(base) } });
+    if (res.status === 401) { clearSession(); setConnection('signed_out'); throw signedOutError(); }
+    const type = res.headers.get('content-type') || '';
+    if (!res.ok || type.includes('text/html')) {
+      throw StudioI18n.error('api.requestFailed', { status: res.status });
+    }
+    return res.blob();
+  }
+
   // ---- Server Shutdown (administrators only; enforced by the backend) ----
   async function shutdownServer() {
     return request('/api/shutdown', { method: 'POST' });
@@ -452,6 +468,7 @@ const StudioAPI = (() => {
     uploadYoutubeCookies,
     removeYoutubeCookies,
     createSSE,
+    fetchOutputBlob,
     shutdownServer,
   };
 })();
@@ -498,6 +515,48 @@ function clipEngine(clip) {
   if (engine.startsWith('llm')) return { kind: 'ai', key: 'clip.engineAi', model: meta.analysis_model || '' };
   if (engine === 'heuristic') return { kind: 'heuristic', key: 'clip.engineHeuristic', model: '' };
   return { kind: 'unknown', key: 'clip.engineUnknown', model: '' };
+}
+
+/** [ai-clipping-studio] Play a clip in its card after fetching it through the API. */
+async function previewClip(button) {
+  const card = button.closest('.clip-card');
+  const video = card.querySelector('video');
+  const note = card.querySelector('.preview-note');
+  button.disabled = true;
+  StudioI18n.text(button, 'job.loadingPreview');
+  try {
+    if (!video.dataset.loaded) {
+      const blob = await StudioAPI.fetchOutputBlob(video.dataset.path);
+      video.src = URL.createObjectURL(blob);
+      video.dataset.loaded = '1';
+    }
+    button.classList.add('hidden');
+    await video.play().catch(() => {});
+  } catch (err) {
+    button.disabled = false;
+    StudioI18n.text(button, 'job.preview');
+    note.classList.remove('hidden');
+    StudioI18n.text(note, 'common.message', { message: StudioI18n.errorMessage(err) });
+  }
+}
+
+/** [ai-clipping-studio] Save a clip/subtitle file fetched through the API. */
+async function downloadOutput(link) {
+  const original = link.textContent;
+  link.setAttribute('aria-busy', 'true');
+  try {
+    const blob = await StudioAPI.fetchOutputBlob(link.dataset.path);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = link.dataset.filename || 'clip.mp4';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (err) {
+    link.textContent = StudioI18n.errorMessage(err);
+    setTimeout(() => { link.textContent = original; }, 4000);
+  } finally {
+    link.removeAttribute('aria-busy');
+  }
 }
 
 /** Mobile sidebar toggle */

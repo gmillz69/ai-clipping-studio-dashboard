@@ -5,6 +5,8 @@ const StudioI18n = (() => {
   const messages = {
     "en": {
       "language": "Language",
+      "job.preview": "▶ Preview",
+      "job.loadingPreview": "Loading…",
       "new.formats": "Output formats",
       "new.formatsHelp": "Each clip is rendered once per format from the same analysis.",
       "new.minSeconds": "Min length (s)",
@@ -293,6 +295,8 @@ const StudioI18n = (() => {
     },
     "id": {
       "language": "Bahasa",
+      "job.preview": "▶ Pratinjau",
+      "job.loadingPreview": "Memuat…",
       "new.formats": "Format keluaran",
       "new.formatsHelp": "Setiap klip dirender sekali per format dari analisis yang sama.",
       "new.minSeconds": "Durasi min (dtk)",
