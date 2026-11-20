@@ -282,11 +282,12 @@
                     const title = clip.title || clip.title_en;
                     return `
                         <div class="clip-card">
-                            ${downloadUrl ? `<video class="clip-video" controls preload="none" src="${downloadUrl}" onerror="this.nextElementSibling.classList.remove('hidden')"></video><p class="hidden p-3 text-xs text-amber-500">${StudioI18n.html('job.previewUnavailable')}</p>` : ''}
+                            ${downloadUrl ? `<video class="clip-video" controls preload="none" src="${downloadUrl}" ${clip.thumbnail_url?.startsWith('/api/outputs/') ? `poster="${escapeHtml(baseUrl + clip.thumbnail_url)}"` : ''} onerror="this.nextElementSibling.classList.remove('hidden')"></video><p class="hidden p-3 text-xs text-amber-500">${StudioI18n.html('job.previewUnavailable')}</p>` : ''}
                             <div class="p-4">
                                 <div class="font-semibold text-sm text-slate-900 dark:text-white mb-2 line-clamp-2">${title ? escapeHtml(title) : StudioI18n.html('job.clipTitle', { rank: clip.rank || i + 1 })}</div>
                                 <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mb-3">
-                                    <span class="engine-badge ${clipEngine(clip).kind}">${StudioI18n.html(clipEngine(clip).key)}</span>
+                                    <span class="engine-badge ${clipEngine(clip).kind}" title="${escapeHtml(clipEngine(clip).model)}">${StudioI18n.html(clipEngine(clip).key)}</span>
+                                    ${clip.metadata?.ratio ? `<span class="engine-badge unknown">${escapeHtml(clip.metadata.ratio)}</span>` : ''}
                                     ${clip.viral_score ? `<span class="font-semibold text-amber-500">🔥 ${escapeHtml(clip.viral_score)}</span>` : ''}
                                     ${clip.duration ? StudioI18n.html('job.duration', { seconds: Math.round(clip.duration) }) : ''}
                                     ${clip.rank ? StudioI18n.html('job.rank', { rank: clip.rank }) : ''}
@@ -297,6 +298,7 @@
                                         <i data-lucide="external-link" class="w-3.5 h-3.5"></i> ${StudioI18n.html('job.openVideo')}
                                     </a>
                                     <a href="${downloadUrl}" download target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-brand-500">${StudioI18n.html('job.download')}</a>
+                                    ${clip.subtitle_url?.startsWith('/api/outputs/') ? `<a href="${escapeHtml(baseUrl + clip.subtitle_url)}" download target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium text-slate-500">${StudioI18n.html('job.subtitles')}</a>` : ''}
                                 ` : ''}
                             </div>
                         </div>
